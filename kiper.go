@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"strings"
 
 	"github.com/spf13/viper"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 type KiperConfig interface {
-	Name() string
+	KCName() string
 }
 
 type KiperValue interface {
@@ -48,7 +47,6 @@ func (k *Kiper) Parse() error {
 		return err
 	}
 
-	fmt.Println(k.arguments)
 	k.kingpin.Parse(k.arguments)
 
 	return nil
@@ -77,13 +75,12 @@ func (k *Kiper) flags(config KiperConfig) error {
 	}
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
-
-		if field.Tag.Get("kiper_config") != "" {
+		value := v.Field(i)
+		if value. != "" {
 			k.flags(v.Field(i).Interface().(KiperConfig))
 		}
 
 		kvName := field.Tag.Get("kiper_value")
-		fmt.Println(strings.Split(kvName, ";"))
 		if kvName != "" {
 			if v.Field(i).MethodByName("Set").IsValid() && v.Field(i).MethodByName("String").IsValid() {
 				k.kingpin.Flag(config.Name()+"."+kvName, "").SetValue(v.Field(i).Interface().(KiperValue))
@@ -143,7 +140,7 @@ func NewConfig(config KiperConfig, name, help string) (*Kiper, error) {
 
 type TestConfig struct {
 	Address *Address `kiper_value:"name:address;help:address of server;default:127.0.0.1"`
-	Test    *string  `kiper_value:"test"`
+	Test    *string  `kiper_value:"name:test"`
 }
 
 type Address struct {
