@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/spf13/viper"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 type KiperConfig interface {
-	KCName() string
 }
 
 type KiperValue interface {
@@ -66,7 +66,7 @@ func (k *Kiper) configFile() error {
 	return nil
 }
 
-func (k *Kiper) flags(config KiperConfig) error {
+func (k *Kiper) flags(config KiperConfig, kcName string) error {
 	t := reflect.TypeOf(config)
 	v := reflect.ValueOf(config)
 	if t.Kind() == reflect.Ptr {
@@ -76,19 +76,61 @@ func (k *Kiper) flags(config KiperConfig) error {
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		value := v.Field(i)
-		if value. != "" {
-			k.flags(v.Field(i).Interface().(KiperConfig))
+		kc := field.Tag.Get("kiper_config")
+		if kc != "" {
+			if err := k.flags(value.Interface().(KiperConfig), kc); err != nil {
+				return err
+			}
+			continue
 		}
 
-		kvName := field.Tag.Get("kiper_value")
-		if kvName != "" {
-			if v.Field(i).MethodByName("Set").IsValid() && v.Field(i).MethodByName("String").IsValid() {
-				k.kingpin.Flag(config.Name()+"."+kvName, "").SetValue(v.Field(i).Interface().(KiperValue))
+		kv := field.Tag.Get("kiper_value")
+		if kv != "" {
+			m := make(map[string]string)
+			for _, k := range strings.Split(kv, ";") {
+				keyPair := strings.Split(k, ":")
+				if len(keyPair) < 2 {
+					continue
+				}
+				m[keyPair[0]] = keyPair[1]
+			}
+			name, ok := m["name"]
+			if !ok {
 				continue
 			}
-			fmt.Println(kvName)
-			s := k.kingpin.Flag(config.Name()+"."+kvName, "").String()
-			v.Field(i).Set(reflect.ValueOf(s))
+			flag := ""
+			if kcName != "" {
+				flag = kcName + "." + name
+			} else {
+				flag = name
+			}
+
+			deflt, ok := m["default"]
+			if !ok {
+				deflt = ""
+			}
+
+			hp, ok := m["help"]
+			if !ok {
+				hp = ""
+			}
+
+			switch field.Type.Kind() {
+			case reflect.String:
+				s := k.kingpin.Flag(flag, hp).Default(deflt).String()
+				v.Field(i).Set(reflect.ValueOf(s))
+			case reflect.Int:
+				s := k.kingpin.Flag(flag, hp).Default(deflt).Int()
+				v.Field(i).Set(reflect.ValueOf(s))
+			case reflect.Bool:
+				s := k.kingpin.Flag(flag, hp).Default(deflt).Bool()
+				v.Field(i).Set(reflect.ValueOf(s))
+			case reflect.Struct:
+			case reflect.Ptr:
+				if v.Field(i).MethodByName("Set").IsValid() && v.Field(i).MethodByName("String").IsValid() {
+					k.kingpin.Flag(flag, hp).SetValue(v.Field(i).Interface().(KiperValue))
+				}
+			}
 		}
 	}
 
@@ -131,7 +173,7 @@ func NewConfig(config KiperConfig, name, help string) (*Kiper, error) {
 	kiper.viper = viper.New()
 	kiper.kingpin = kingpin.New(name, help)
 
-	if err := kiper.flags(config); err != nil {
+	if err := kiper.flags(config, ""); err != nil {
 		return nil, err
 	}
 
@@ -154,10 +196,6 @@ func (a *Address) Set(s string) error {
 
 func (a *Address) String() string {
 	return a.s
-}
-
-func (t *TestConfig) Name() string {
-	return "test_config"
 }
 
 func main() {
