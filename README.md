@@ -1,5 +1,5 @@
 # kiper
-A small wrapper of [kingpin](https://github.com/alecthomas/kingpin) + [viper](https://github.com/spf13/viper.git). I like the way viper handles the config files however I am a fan of kinping because it can validate the command line flags easily. This library is just a combination of the features of this two projects.
+A small configuration tool which is a wrapper of [kingpin](https://github.com/alecthomas/kingpin) + [viper](https://github.com/spf13/viper.git). I like the way viper handles the config files however I am a fan of kinping because it can validate the command line flags easily. This library is just a combination of the features of this two projects.
 
 # Feature
 
@@ -17,8 +17,9 @@ $ go get github.com/leeif/kiper
 [kiper_example.go](https://github.com/leeif/kiper/blob/master/_example/kiper_example.go)
 
 ```
+$ dep ensure
 $ cd _example
-$ go run kiper_example.go
+$ go run kiper_example.go --help
 ```
 
 ## Struct Tags
@@ -36,6 +37,3 @@ kiper_value
 |  name  |  value name  |
 |  default  |  default value  |
 |  help  |  help message  |
-
-
-

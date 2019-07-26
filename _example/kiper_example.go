@@ -9,12 +9,6 @@ import (
 	"github.com/leeif/kiper"
 )
 
-type Config struct {
-	ConfigFile *string `kiper_value:"name:config_file;default:./config.json"`
-	ID         *int    `kiper_value:"name:id;default:1"`
-	Server     Server  `kiper_config:"name:server"`
-}
-
 type Server struct {
 	Address *Address `kiper_value:"name:address;default:127.0.0.1"`
 	Port    *Port    `kiper_value:"name:port;default:3306"`
@@ -52,6 +46,12 @@ func (port *Port) String() string {
 	return port.p
 }
 
+type Config struct {
+	ConfigFile *string `kiper_value:"name:config_file;default:./config.json"`
+	ID         *int    `kiper_value:"name:id;default:1"`
+	Server     Server  `kiper_config:"name:server"`
+}
+
 func main() {
 	// initialize config struct
 	c := &Config{
@@ -79,6 +79,7 @@ func main() {
 	fmt.Println(c.Server.Address)
 	fmt.Println(*c.ID)
 
+	// merge with config file
 	if err := k.MergeConfigFile(c); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
