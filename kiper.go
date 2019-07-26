@@ -1,17 +1,13 @@
-package main
+package kiper
 
 import (
-	"fmt"
-	"os"
+	"errors"
 	"reflect"
 	"strings"
 
 	"github.com/spf13/viper"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
-
-type KiperConfig interface {
-}
 
 type KiperValue interface {
 	Set(string) error
@@ -22,15 +18,16 @@ type Kiper struct {
 	viper          *viper.Viper
 	kingpin        *kingpin.Application
 	configFilePath []string
-	arguments      []string
+	args           []string
 }
 
 func (k *Kiper) SetConfigFilePath(path string) {
 	k.configFilePath = append(k.configFilePath, path)
 }
 
-func (k *Kiper) SetCommandLineArguments(args []string) {
-	k.arguments = args
+func (k *Kiper) SetCommandLineFlag(config interface{}, args []string) {
+	k.args = args
+	k.flags(config, "")
 }
 
 func (k *Kiper) GetViperInstance() *viper.Viper {
@@ -42,11 +39,15 @@ func (k *Kiper) GetKingpinInstance() *kingpin.Application {
 }
 
 func (k *Kiper) Parse() error {
+	// read config file
 	if err := k.configFile(); err != nil {
 		return err
 	}
 
-	k.kingpin.Parse(k.arguments)
+	// parse command line flags
+	if _, err := k.kingpin.Parse(k.args); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -65,7 +66,7 @@ func (k *Kiper) configFile() error {
 	return nil
 }
 
-func (k *Kiper) flags(config KiperConfig, kcName string) error {
+func (k *Kiper) flags(config interface{}, kcName string) error {
 	t := reflect.TypeOf(config)
 	v := reflect.ValueOf(config)
 	if t.Kind() == reflect.Ptr {
@@ -75,65 +76,47 @@ func (k *Kiper) flags(config KiperConfig, kcName string) error {
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		value := v.Field(i)
-		kc := field.Tag.Get("kiper_config")
-		if kc != "" {
-			if err := k.flags(value.Interface().(KiperConfig), kc); err != nil {
+		tags := k.parseTag(field.Tag.Get("kiper_config"))
+		if name, ok := tags["name"]; ok && name != "" {
+			if err := k.flags(value.Interface(), name); err != nil {
 				return err
 			}
 			continue
 		}
 
-		kv := field.Tag.Get("kiper_value")
-		if kv != "" {
-			m := make(map[string]string)
-			for _, k := range strings.Split(kv, ";") {
-				keyPair := strings.Split(k, ":")
-				if len(keyPair) < 2 {
-					continue
-				}
-				m[keyPair[0]] = keyPair[1]
-			}
-			name, ok := m["name"]
-			if !ok {
-				continue
-			}
-			flag := ""
-			if kcName != "" {
-				flag = kcName + "." + name
-			} else {
-				flag = name
-			}
+		tags = k.parseTag(field.Tag.Get("kiper_value"))
 
-			deflt, ok := m["default"]
-			if !ok {
-				deflt = ""
-			}
+		if name, ok := tags["name"]; !ok || name == "" {
+			continue
+		}
+		hp, deflt := tags["help"], tags["default"]
 
-			hp, ok := m["help"]
-			if !ok {
-				hp = ""
-			}
+		flag := ""
+		if kcName == "" {
+			flag = tags["name"]
+		} else {
+			flag = kcName + "." + tags["name"]
+		}
 
-			if field.Type.Kind() == reflect.Ptr {
-				switch field.Type.Elem().Kind() {
-				case reflect.String:
-					s := k.kingpin.Flag(flag, hp).Default(deflt).String()
-					v.Field(i).Set(reflect.ValueOf(s))
-				case reflect.Int:
-					s := k.kingpin.Flag(flag, hp).Default(deflt).Int()
-					v.Field(i).Set(reflect.ValueOf(s))
-				case reflect.Bool:
-					s := k.kingpin.Flag(flag, hp).Default(deflt).Bool()
-					v.Field(i).Set(reflect.ValueOf(s))
-				case reflect.Struct:
-					if v.Field(i).MethodByName("Set").IsValid() && v.Field(i).MethodByName("String").IsValid() {
-						k.kingpin.Flag(flag, hp).Default(deflt).SetValue(v.Field(i).Interface().(KiperValue))
-					}
-				}
-			} else if field.Type.Kind() == reflect.Struct {
+		if field.Type.Kind() == reflect.Ptr {
+			switch field.Type.Elem().Kind() {
+			case reflect.String:
+				s := k.kingpin.Flag(flag, hp).Default(deflt).String()
+				v.Field(i).Set(reflect.ValueOf(s))
+			case reflect.Int:
+				s := k.kingpin.Flag(flag, hp).Default(deflt).Int()
+				v.Field(i).Set(reflect.ValueOf(s))
+			case reflect.Bool:
+				s := k.kingpin.Flag(flag, hp).Default(deflt).Bool()
+				v.Field(i).Set(reflect.ValueOf(s))
+			case reflect.Struct:
 				if v.Field(i).MethodByName("Set").IsValid() && v.Field(i).MethodByName("String").IsValid() {
 					k.kingpin.Flag(flag, hp).Default(deflt).SetValue(v.Field(i).Interface().(KiperValue))
 				}
+			}
+		} else if field.Type.Kind() == reflect.Struct {
+			if v.Field(i).MethodByName("Set").IsValid() && v.Field(i).MethodByName("String").IsValid() {
+				k.kingpin.Flag(flag, hp).Default(deflt).SetValue(v.Field(i).Interface().(KiperValue))
 			}
 		}
 	}
@@ -141,123 +124,90 @@ func (k *Kiper) flags(config KiperConfig, kcName string) error {
 	return nil
 }
 
-func (k *Kiper) Merge(config KiperConfig) {
-	k.merge(config, k.viper.AllSettings())
+func (k *Kiper) parseTag(tag string) map[string]string {
+	m := make(map[string]string)
+	for _, k := range strings.Split(tag, ";") {
+		keyPair := strings.Split(k, ":")
+		if len(keyPair) < 2 {
+			continue
+		}
+		m[keyPair[0]] = keyPair[1]
+	}
+	return m
 }
 
-func (k *Kiper) merge(config KiperConfig, m map[string]interface{}) {
+func (k *Kiper) MergeConfigFile(config interface{}) error {
+	if err := k.merge(config, k.viper.AllSettings()); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (k *Kiper) merge(config interface{}, m map[string]interface{}) error {
 	t := reflect.TypeOf(config)
 	v := reflect.ValueOf(config)
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 		v = v.Elem()
 	}
+
+	if t.Kind() != reflect.Struct {
+		return errors.New("Config is not Struct")
+	}
+
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
-		kcName := field.Tag.Get("kiper_config")
-		if _, ok := m[kcName]; kcName != "" && ok {
-			kc := v.Field(i).Interface().(KiperConfig)
-			if reflect.TypeOf(m[kcName]).Kind() == reflect.Map {
-				k.merge(kc, m[kcName].(map[string]interface{}))
+		value := v.Field(i)
+		tags := k.parseTag(field.Tag.Get("kiper_config"))
+		if name, ok := tags["name"]; ok && name != "" {
+			if v, ok := m[name]; !ok || reflect.TypeOf(v).Kind() != reflect.Map {
+				continue
 			}
+			if field.Type.Kind() != reflect.Struct && field.Type.Kind() != reflect.Ptr {
+				continue
+			}
+			if err := k.merge(value.Interface(), m[name].(map[string]interface{})); err != nil {
+				return err
+			}
+			continue
 		}
-		kvName := field.Tag.Get("kiper_value")
-		if kvName != "" {
-			d := make(map[string]string)
-			for _, k := range strings.Split(kvName, ";") {
-				keyPair := strings.Split(k, ":")
-				if len(keyPair) < 2 {
-					continue
-				}
-				d[keyPair[0]] = keyPair[1]
-			}
-			name, ok := d["name"]
-			if !ok {
+		tags = k.parseTag(field.Tag.Get("kiper_value"))
+		if name, ok := tags["name"]; ok && name != "" {
+			if _, ok = m[name]; !ok {
 				continue
 			}
-			_, ok = m[name]
-			if !ok {
-				continue
-			}
-
 			if t.Field(i).Type.Kind() == reflect.Ptr {
 				vField := v.Field(i).Elem()
 				switch vField.Kind() {
 				case reflect.String:
 					vField.SetString(m[name].(string))
 				case reflect.Int:
-					vField.SetInt(m[name].(int64))
+					vField.SetInt(int64(m[name].(float64)))
 				case reflect.Bool:
 					vField.SetBool(m[name].(bool))
 				case reflect.Struct:
 					if v.Field(i).MethodByName("Set").IsValid() && v.Field(i).MethodByName("String").IsValid() {
-						v.Field(i).Interface().(KiperValue).Set(m[name].(string))
+						if err := v.Field(i).Interface().(KiperValue).Set(m[name].(string)); err != nil {
+							return err
+						}
 					}
 				}
 			} else if t.Field(i).Type.Kind() == reflect.Struct {
 				if v.Field(i).MethodByName("Set").IsValid() && v.Field(i).MethodByName("String").IsValid() {
-						v.Field(i).Interface().(KiperValue).Set(m[name].(string))
+					if err := v.Field(i).Interface().(KiperValue).Set(m[name].(string)); err != nil {
+						return err
+					}
 				}
 			}
 		}
 	}
+	return nil
 }
 
-func NewKiper(config KiperConfig, name, help string) (*Kiper, error) {
+func NewKiper(name, help string) *Kiper {
 	kiper := &Kiper{}
 	kiper.viper = viper.New()
 	kiper.kingpin = kingpin.New(name, help)
 
-	if err := kiper.flags(config, ""); err != nil {
-		return nil, err
-	}
-
-	return kiper, nil
-}
-
-type TestConfig struct {
-	Address *Address `kiper_value:"name:address;help:address of server;default:127.0.0.1"`
-	Test    *string  `kiper_value:"name:test;default:test"`
-	Another Another  `kiper_config:"another"`
-}
-
-type Another struct {
-	Address *Address `kiper_value:"name:address;help:address of server;default:127.0.0.1"`
-}
-
-type Address struct {
-	s string
-}
-
-func (a *Address) Set(s string) error {
-	a.s = s
-	return nil
-}
-
-func (a *Address) String() string {
-	return a.s
-}
-
-func main() {
-	tc := &TestConfig{
-		Address: &Address{},
-		Another: Another{
-			Address: &Address{},
-		},
-	}
-
-	kiper, err := NewKiper(tc, "", "")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	kiper.SetCommandLineArguments(os.Args[1:])
-	kiper.SetConfigFilePath("./config.json")
-
-	err = kiper.Parse()
-	if err != nil {
-		fmt.Println(err)
-	}
-	kiper.Merge(tc)
-	fmt.Println(tc.Address.String())
+	return kiper
 }
