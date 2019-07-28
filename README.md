@@ -13,8 +13,6 @@ $ go get github.com/leeif/kiper
 
 ## Example
 
-[kiper_example.go](https://github.com/leeif/kiper/blob/master/_example/kiper_example.go)
-
 ```
 $ dep ensure
 $ cd _example
