@@ -3,7 +3,6 @@ A small configuration tool which is a wrapper of [kingpin](https://github.com/al
 
 # Feature
 
-* Merge command line flags and config file settings.
 * Validate command line flags and config file bothly.
 
 # Usage
