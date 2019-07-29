@@ -105,5 +105,6 @@ kiper_value
 |  help  |  help message  |
 
 ## Limitation
-	* All the primitive types should be pointer types.
-	* Not support sub command yet
+
+* All the primitive types should be pointer types.
+* Not support sub command yet
