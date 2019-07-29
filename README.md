@@ -83,8 +83,9 @@ fan of go: true
 [kiper_example.go](https://github.com/leeif/kiper/blob/master/_example/kiper_example.go)
 
 ```
+$ dep ensure
 $ cd _example
-$ go run kiper_example.go
+$ go run kiper_example.go --help
 ```
 
 ## Struct Tags
