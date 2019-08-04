@@ -10,9 +10,11 @@ import (
 )
 
 type TestConfig struct {
-	Address *Address `kiper_value:"name:address;help:address of server;default:127.0.0.1"`
-	Test    *string  `kiper_value:"name:test;default:test"`
-	Another Another  `kiper_config:"name:another"`
+	Address    *Address `kiper_value:"name:address;help:address of server;default:127.0.0.1"`
+	TestString *string  `kiper_value:"name:test_string;default:test_string"`
+	TestInt    *int     `kiper_value:"name:test_int;default:1"`
+	TestBool   *bool    `kiper_value:"name:test_bool;default:true"`
+	Another    Another  `kiper_config:"name:another"`
 }
 
 type Another struct {
@@ -67,18 +69,22 @@ func TestKiperConfig(t *testing.T) {
 	}
 
 	// command line flags
-	args := []string{"--address", "10.0.0.1", "--test", "not test", "--another.address", "192.0.0.1"}
+	args := []string{"--address", "10.0.0.1",
+		"--test_string", "not test",
+		"--test_int", "2",
+		"--test_bool",
+		"--another.address", "192.0.0.1"}
 
 	// config file
 	writeConfigFile("./config.json", struct {
-		Address string `json:"address"`
-		Test    string `json:"test"`
-		Another struct {
+		Address    string `json:"address"`
+		TestString string `json:"test_string"`
+		Another    struct {
 			Address string `json:"address"`
 		} `json:"another"`
 	}{
-		Address: "test1",
-		Test:    "test2",
+		Address:    "test1",
+		TestString: "test2",
 		Another: struct {
 			Address string `json:"address"`
 		}{
@@ -97,7 +103,9 @@ func TestKiperConfig(t *testing.T) {
 	}
 
 	assert.Equal(t, tc.Address.String(), "10.0.0.1", "address should be test1")
-	assert.Equal(t, *tc.Test, "not test", "test should be test2")
+	assert.Equal(t, *tc.TestString, "not test", "test should be test2")
+	assert.Equal(t, *tc.TestInt, 2, "test should be test2")
+	assert.Equal(t, *tc.TestBool, true, "test should be test2")
 	assert.Equal(t, tc.Another.Address.String(), "192.0.0.1", "another.address should be test3")
 
 	if err := kiper.MergeConfigFile(tc); err != nil {
@@ -105,6 +113,6 @@ func TestKiperConfig(t *testing.T) {
 	}
 
 	assert.Equal(t, tc.Address.String(), "test1", "address should be test1 after merge")
-	assert.Equal(t, *tc.Test, "test2", "test should be test2 after merge")
+	assert.Equal(t, *tc.TestString, "test2", "test should be test2 after merge")
 	assert.Equal(t, tc.Another.Address.String(), "test3", "another.address should be test3 after merge")
 }
