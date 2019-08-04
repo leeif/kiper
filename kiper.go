@@ -68,6 +68,11 @@ func (k *Kiper) flags(config interface{}, kcName string) error {
 		t = t.Elem()
 		v = v.Elem()
 	}
+
+	if t.Kind() != reflect.Struct {
+		return errors.New("Kiper Config " + t.Name() + " is not Struct")
+	}
+
 	for i := 0; i < t.NumField(); i++ {
 		field := t.Field(i)
 		value := v.Field(i)
