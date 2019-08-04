@@ -91,7 +91,7 @@ func TestKiperConfig(t *testing.T) {
 	kiper.SetConfigFilePath("./config.json")
 	kiper.SetCommandLineFlag(tc, args)
 
-	err := kiper.Parse()
+	err := kiper.ParseCommandLine()
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

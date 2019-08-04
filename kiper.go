@@ -38,12 +38,7 @@ func (k *Kiper) GetKingpinInstance() *kingpin.Application {
 	return k.kingpin
 }
 
-func (k *Kiper) Parse() error {
-	// read config file
-	if err := k.configFile(); err != nil {
-		return err
-	}
-
+func (k *Kiper) ParseCommandLine() error {
 	// parse command line flags
 	if _, err := k.kingpin.Parse(k.args); err != nil {
 		return err
@@ -137,6 +132,12 @@ func (k *Kiper) parseTag(tag string) map[string]string {
 }
 
 func (k *Kiper) MergeConfigFile(config interface{}) error {
+	// read config file
+	if err := k.configFile(); err != nil {
+		return err
+	}
+
+	// get all config file setting
 	if err := k.merge(config, k.viper.AllSettings()); err != nil {
 		return err
 	}
