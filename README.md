@@ -41,7 +41,7 @@ func main() {
 	k.SetCommandLineFlag(c, os.Args[1:])
 
 	// parse command line and config file
-	if err := k.Parse(); err != nil {
+	if err := k.ParseCommandLine(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
