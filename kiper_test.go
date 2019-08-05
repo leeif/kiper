@@ -94,10 +94,8 @@ func TestKiperConfig(t *testing.T) {
 	defer deleteConfigFile("./config.json")
 
 	kiper := kiper.NewKiper("test", "kiper test")
-	kiper.SetConfigFilePath("./config.json")
-	kiper.SetCommandLineFlag(tc, args)
 
-	err := kiper.ParseCommandLine()
+	err := kiper.ParseCommandLine(tc, args)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -108,6 +106,7 @@ func TestKiperConfig(t *testing.T) {
 	assert.Equal(t, *tc.TestBool, true, "test should be test2")
 	assert.Equal(t, tc.Another.Address.String(), "192.0.0.1", "another.address should be test3")
 
+	kiper.ParseConfigFile("./config.json")
 	if err := kiper.MergeConfigFile(tc); err != nil {
 		t.Fatalf(err.Error())
 	}

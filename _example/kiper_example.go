@@ -64,20 +64,17 @@ func main() {
 	// new kiper
 	k := kiper.NewKiper("example", "example of kiper")
 
-	// set config struct and command line argument for kingpin setting
-	k.SetCommandLineFlag(c, os.Args[1:])
-
-	// set config file path for viper
-	k.SetConfigFilePath("./config.json")
-
 	// parse command line and config file
-	if err := k.Parse(); err != nil {
+	if err := k.ParseCommandLine(c, os.Args[1:]); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	fmt.Println(c.Server.Address)
 	fmt.Println(*c.ID)
+
+	// set config file path for viper
+	k.ParseConfigFile("./config.json")
 
 	// merge with config file
 	if err := k.MergeConfigFile(c); err != nil {

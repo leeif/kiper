@@ -37,11 +37,8 @@ func main() {
 	// new kiper
 	k := kiper.NewKiper("example", "example of kiper")
 
-	// set config struct and command line argument for kingpin setting
-	k.SetCommandLineFlag(c, os.Args[1:])
-
 	// parse command line and config file
-	if err := k.ParseCommandLine(); err != nil {
+	if err := k.ParseCommandLine(c, os.Args[1:]); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}

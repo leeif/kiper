@@ -15,19 +15,8 @@ type KiperValue interface {
 }
 
 type Kiper struct {
-	viper          *viper.Viper
-	kingpin        *kingpin.Application
-	configFilePath []string
-	args           []string
-}
-
-func (k *Kiper) SetConfigFilePath(path string) {
-	k.configFilePath = append(k.configFilePath, path)
-}
-
-func (k *Kiper) SetCommandLineFlag(config interface{}, args []string) {
-	k.args = args
-	k.flags(config, "")
+	viper   *viper.Viper
+	kingpin *kingpin.Application
 }
 
 func (k *Kiper) GetViperInstance() *viper.Viper {
@@ -38,17 +27,19 @@ func (k *Kiper) GetKingpinInstance() *kingpin.Application {
 	return k.kingpin
 }
 
-func (k *Kiper) ParseCommandLine() error {
+func (k *Kiper) ParseCommandLine(config interface{}, args []string) error {
+	startKiperConfig := ""
+	k.flags(config, startKiperConfig)
 	// parse command line flags
-	if _, err := k.kingpin.Parse(k.args); err != nil {
+	if _, err := k.kingpin.Parse(args); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (k *Kiper) configFile() error {
-	for _, path := range k.configFilePath {
+func (k *Kiper) ParseConfigFile(path ...string) error {
+	for _, path := range path {
 		k.viper.SetConfigFile(path)
 	}
 	if err := k.viper.ReadInConfig(); err != nil {
@@ -137,10 +128,6 @@ func (k *Kiper) parseTag(tag string) map[string]string {
 }
 
 func (k *Kiper) MergeConfigFile(config interface{}) error {
-	// read config file
-	if err := k.configFile(); err != nil {
-		return err
-	}
 
 	// get all config file setting
 	if err := k.merge(config, k.viper.AllSettings()); err != nil {
