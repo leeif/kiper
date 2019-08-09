@@ -2,6 +2,7 @@ package kiper
 
 import (
 	"errors"
+	"os"
 	"reflect"
 	"strings"
 
@@ -38,16 +39,16 @@ func (k *Kiper) ParseCommandLine(config interface{}, args []string) error {
 	return nil
 }
 
-func (k *Kiper) ParseConfigFile(path ...string) error {
-	for _, path := range path {
-		k.viper.SetConfigFile(path)
+func (k *Kiper) ParseConfigFile(path string) error {
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		// return implicitly if file is not exists
+		return nil
 	}
+
+	k.viper.SetConfigFile(path)
 	if err := k.viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-		} else {
-			// Config file was found but another error was produced
-			return err
-		}
+		return err
 	}
 	return nil
 }

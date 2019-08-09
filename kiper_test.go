@@ -106,7 +106,10 @@ func TestKiperConfig(t *testing.T) {
 	assert.Equal(t, *tc.TestBool, true, "test should be test2")
 	assert.Equal(t, tc.Another.Address.String(), "192.0.0.1", "another.address should be test3")
 
-	kiper.ParseConfigFile("./config.json")
+	if err := kiper.ParseConfigFile("./config.json"); err != nil {
+		t.Fatalf(err.Error())
+	}
+
 	if err := kiper.MergeConfigFile(tc); err != nil {
 		t.Fatalf(err.Error())
 	}
