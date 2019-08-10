@@ -123,7 +123,8 @@ func (k *Kiper) parseTag(tag string) map[string]string {
 		if len(keyPair) < 2 {
 			continue
 		}
-		m[keyPair[0]] = keyPair[1]
+		// rejoin the rest part of tag using `:`
+		m[keyPair[0]] = strings.Join(keyPair[1:], ":")
 	}
 	return m
 }
