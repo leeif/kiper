@@ -69,11 +69,14 @@ func TestKiperConfig(t *testing.T) {
 	}
 
 	// command line flags
-	args := []string{"--address", "10.0.0.1",
+	args := []string{
+		"--config", "./config.json",
+		"--address", "10.0.0.1",
 		"--test_string", "not test",
 		"--test_int", "2",
 		"--test_bool",
-		"--another.address", "192.0.0.1"}
+		"--another.address", "192.0.0.1",
+	}
 
 	// config file
 	writeConfigFile("./config.json", struct {
@@ -94,8 +97,8 @@ func TestKiperConfig(t *testing.T) {
 	defer deleteConfigFile("./config.json")
 
 	kiper := kiper.NewKiper("test", "kiper test")
-
-	err := kiper.ParseCommandLine(tc, args)
+	kiper.SetConfigFileFlag("config", "config file flag", "")
+	err := kiper.Parse(tc, args)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -105,14 +108,6 @@ func TestKiperConfig(t *testing.T) {
 	assert.Equal(t, *tc.TestInt, 2, "test should be test2")
 	assert.Equal(t, *tc.TestBool, true, "test should be test2")
 	assert.Equal(t, tc.Another.Address.String(), "192.0.0.1", "another.address should be test3")
-
-	if err := kiper.ParseConfigFile("./config.json"); err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	if err := kiper.MergeConfigFile(tc); err != nil {
-		t.Fatalf(err.Error())
-	}
 
 	assert.Equal(t, tc.Address.String(), "test1", "address should be test1 after merge")
 	assert.Equal(t, *tc.TestString, "test2", "test should be test2 after merge")

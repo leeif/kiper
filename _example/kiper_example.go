@@ -10,8 +10,8 @@ import (
 )
 
 type Server struct {
-	Address *Address `kiper_value:"name:address;default:127.0.0.1"`
-	Port    *Port    `kiper_value:"name:port;default:3306"`
+	Address *Address `kiper_value:"name:address"`
+	Port    *Port    `kiper_value:"name:port"`
 }
 
 type Address struct {
@@ -47,9 +47,8 @@ func (port *Port) String() string {
 }
 
 type Config struct {
-	ConfigFile *string `kiper_value:"name:config_file;default:./config.json"`
-	ID         *int    `kiper_value:"name:id;default:1"`
-	Server     Server  `kiper_config:"name:server"`
+	ID     *int   `kiper_value:"name:id;default:1"`
+	Server Server `kiper_config:"name:server"`
 }
 
 func main() {
@@ -63,25 +62,15 @@ func main() {
 
 	// new kiper
 	k := kiper.NewKiper("example", "example of kiper")
+	k.SetConfigFileFlag("config", "config file", "./config.json")
+	k.Kingpin.HelpFlag.Short('h')
 
 	// parse command line and config file
-	if err := k.ParseCommandLine(c, os.Args[1:]); err != nil {
+	if err := k.Parse(c, os.Args[1:]); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	fmt.Println(c.Server.Address)
-	fmt.Println(*c.ID)
-
-	// set config file path for viper
-	k.ParseConfigFile("./config.json")
-
-	// merge with config file
-	if err := k.MergeConfigFile(c); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	fmt.Println(c.Server.Address)
+	fmt.Println(c.Server.Port)
 	fmt.Println(*c.ID)
 }
