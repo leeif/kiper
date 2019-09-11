@@ -1,10 +1,10 @@
 # kiper
-A small wrapper of [kingpin](https://github.com/alecthomas/kingpin) + [viper](https://github.com/spf13/viper.git). I like the way viper handles the config files however I am a fan of kinping because it's fluent-style and it can validate the command line flags easily. This library is just a combination of the features of this two projects.
+A small wrapper of [kingpin](https://github.com/alecthomas/kingpin) + [viper](https://github.com/spf13/viper.git). I like the way viper handles the config files however personally I am a fan of kinping because it's fluent-style and it can validate the command line flags easily. This library is a combination of this two projects to handle the flags and config files at the same time.
 
 # Feature
 
-* Merge command line flags and config file settings.
-* Validate command line flags and config file bothly.
+* Merge flag and config file settings automatically.
+* Validate the settings for both flag and config file settings.
 
 # Usage
 
@@ -25,7 +25,7 @@ import (
 )
 
 type Config struct {
-	Name    *string `kiper_value:"name:name;default:leeif"`
+	Name    *string `kiper_value:"name:name;required"`
 	Gender  *int    `kiper_value:"name:gender;default:1"`
 	FanOfGo *bool   `kiper_value:"name:fan_of_go;default:false"`
 }
@@ -38,7 +38,7 @@ func main() {
 	k := kiper.NewKiper("example", "example of kiper")
 
 	// parse command line and config file
-	if err := k.ParseCommandLine(c, os.Args[1:]); err != nil {
+	if err := k.Parse(c, os.Args[1:]); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -49,33 +49,14 @@ func main() {
 }
 ```
 
-output
-
 ```
-$ go run ./ --help
-usage: example [<flags>]
-
-example of kiper
-
-Flags:
-  --help          Show context-sensitive help (also try --help-long and --help-man).
-  --name="leeif"
-  --gender=1
-  --fan_of_go
-
-$ go run ./
+go run . --name=leeif
 name: leeif
 gender: 1
 fan of go: false
-
-// Noop, I am a fan
-$ go run ./ --fan_of_go --fan_of_go
-name: leeif
-gender: 1
-fan of go: true
 ```
 
-### Example of combination with command line flags and config file
+### Example of merging flag and config file settings
 
 [kiper_example.go](https://github.com/leeif/kiper/blob/master/_example/kiper_example.go)
 
@@ -83,6 +64,41 @@ fan of go: true
 $ dep ensure
 $ cd _example
 $ go run kiper_example.go --help
+```
+
+## kiper_value
+
+kiper_value now support the types of int, string, bool and their pointer types.
+
+kiper_value can also be a struct which implement the interface for validations.
+
+```
+type KiperValue interface {
+	Set(string) error
+	String() string
+}
+```
+
+```
+type Port struct {
+	p string
+}
+
+func (port *Port) Set(p string) error {
+	if p == "" {
+		return errors.New("port can't be empty")
+	}
+	port.p = p
+	return nil
+}
+
+func (port *Port) String() string {
+	return port.p
+}
+
+type Config struct {
+	Port *Port `kiper_value:"name:port;help:port of server;default:8080"`
+}
 ```
 
 ## Struct Tags
@@ -100,8 +116,8 @@ kiper_value
 |  name  |  value name  |
 |  default  |  default value  |
 |  help  |  help message  |
+|  required      | set the flag to required, default value will be ignored due to the kingpin feature |
 
 ## Limitation
-
-* All the primitive types should be pointer types.
+* Config file settings have a higher priority when merge with flags
 * Not support sub command yet
