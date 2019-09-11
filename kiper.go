@@ -2,7 +2,6 @@ package kiper
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"reflect"
 	"strings"
@@ -58,7 +57,6 @@ func (k *Kiper) Parse(config interface{}, args []string) error {
 		return err
 	}
 
-	fmt.Println(*k.configFile)
 	if k.configFile != nil && *k.configFile != "" {
 		k.vpMap, err = k.parseConfigFile(*k.configFile)
 	} else {

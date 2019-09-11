@@ -11,9 +11,9 @@ import (
 
 type TestConfig struct {
 	Address    *Address `kiper_value:"name:address;help:address of server;default:127.0.0.1"`
-	TestString *string  `kiper_value:"name:test_string;default:test_string"`
-	TestInt    *int     `kiper_value:"name:test_int;default:1"`
-	TestBool   *bool    `kiper_value:"name:test_bool;default:true"`
+	TestString string   `kiper_value:"name:test_string;default:test_string"`
+	TestInt    int      `kiper_value:"name:test_int;required"`
+	TestBool   bool     `kiper_value:"name:test_bool;default:false"`
 	Another    Another  `kiper_config:"name:another"`
 }
 
@@ -74,7 +74,6 @@ func TestKiperConfig(t *testing.T) {
 		"--address", "10.0.0.1",
 		"--test_string", "not test",
 		"--test_int", "2",
-		"--test_bool",
 		"--another.address", "192.0.0.1",
 	}
 
@@ -97,19 +96,16 @@ func TestKiperConfig(t *testing.T) {
 	defer deleteConfigFile("./config.json")
 
 	kiper := kiper.NewKiper("test", "kiper test")
-	kiper.SetConfigFileFlag("config", "config file flag", "")
+	kiper.SetConfigFileFlag("config", "config file flag", "./config.json")
 	err := kiper.Parse(tc, args)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 
-	assert.Equal(t, tc.Address.String(), "10.0.0.1", "address should be test1")
-	assert.Equal(t, *tc.TestString, "not test", "test should be test2")
-	assert.Equal(t, *tc.TestInt, 2, "test should be test2")
-	assert.Equal(t, *tc.TestBool, true, "test should be test2")
-	assert.Equal(t, tc.Another.Address.String(), "192.0.0.1", "another.address should be test3")
+	assert.Equal(t, tc.TestInt, 2, "test should be test2")
+	assert.Equal(t, tc.TestBool, false, "test should be test2")
 
 	assert.Equal(t, tc.Address.String(), "test1", "address should be test1 after merge")
-	assert.Equal(t, *tc.TestString, "test2", "test should be test2 after merge")
+	assert.Equal(t, tc.TestString, "test2", "test should be test2 after merge")
 	assert.Equal(t, tc.Another.Address.String(), "test3", "another.address should be test3 after merge")
 }
