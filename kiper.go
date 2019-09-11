@@ -138,25 +138,31 @@ func (k *Kiper) parseFlags(config interface{}, kcName string) (map[string]interf
 			flag = kcName + "." + tags["name"]
 		}
 
+		kflag := k.Kingpin.Flag(flag, hp)
+		if tags["required"] != "" {
+			kflag = kflag.Required()
+		} else {
+			kflag = kflag.Default(deflt)
+		}
 		switch field.Type.Kind() {
 		case reflect.String:
-			res[tags["name"]] = k.Kingpin.Flag(flag, hp).Default(deflt).String()
+			res[tags["name"]] = kflag.String()
 		case reflect.Int:
-			res[tags["name"]] = k.Kingpin.Flag(flag, hp).Default(deflt).Int()
+			res[tags["name"]] = kflag.Int()
 		case reflect.Bool:
-			res[tags["name"]] = k.Kingpin.Flag(flag, hp).Default(deflt).Bool()
+			res[tags["name"]] = kflag.Bool()
 		case reflect.Struct:
-			res[tags["name"]] = k.Kingpin.Flag(flag, hp).Default(deflt).String()
+			res[tags["name"]] = kflag.String()
 		case reflect.Ptr:
 			switch field.Type.Elem().Kind() {
 			case reflect.String:
-				res[tags["name"]] = k.Kingpin.Flag(flag, hp).Default(deflt).String()
+				res[tags["name"]] = kflag.String()
 			case reflect.Int:
-				res[tags["name"]] = k.Kingpin.Flag(flag, hp).Default(deflt).Int()
+				res[tags["name"]] = kflag.Int()
 			case reflect.Bool:
-				res[tags["name"]] = k.Kingpin.Flag(flag, hp).Default(deflt).Bool()
+				res[tags["name"]] = kflag.Bool()
 			case reflect.Struct:
-				res[tags["name"]] = k.Kingpin.Flag(flag, hp).Default(deflt).String()
+				res[tags["name"]] = kflag.String()
 			}
 		}
 	}
@@ -168,7 +174,11 @@ func (k *Kiper) parseTag(tag string) map[string]string {
 	m := make(map[string]string)
 	for _, k := range strings.Split(tag, ";") {
 		keyPair := strings.Split(k, ":")
-		if len(keyPair) < 2 {
+		if len(keyPair) < 1 {
+			continue
+		}
+		if len(keyPair) == 1 {
+			m[keyPair[0]] = keyPair[0]
 			continue
 		}
 		// rejoin the rest part of tag using `:`
