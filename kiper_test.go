@@ -13,6 +13,7 @@ type TestConfig struct {
 	Address    *Address `kiper_value:"name:address;help:address of server;default:127.0.0.1"`
 	TestString string   `kiper_value:"name:test_string;default:test_string"`
 	TestInt    int      `kiper_value:"name:test_int;required"`
+	TestInt64  int64    `kiper_value:"name:test_int64;default:64"`
 	TestBool   bool     `kiper_value:"name:test_bool;default:false"`
 	Another    Another  `kiper_config:"name:another"`
 }
@@ -74,6 +75,7 @@ func TestKiperConfig(t *testing.T) {
 		"--address", "10.0.0.1",
 		"--test_string", "not test",
 		"--test_int", "2",
+		"--test_int64", "80",
 		"--another.address", "192.0.0.1",
 	}
 
@@ -104,6 +106,8 @@ func TestKiperConfig(t *testing.T) {
 
 	assert.Equal(t, tc.TestInt, 2, "test should be test2")
 	assert.Equal(t, tc.TestBool, false, "test should be test2")
+
+	assert.Equal(t, tc.TestInt64, int64(80), "test should be 80")
 
 	assert.Equal(t, tc.Address.String(), "test1", "address should be test1 after merge")
 	assert.Equal(t, tc.TestString, "test2", "test should be test2 after merge")

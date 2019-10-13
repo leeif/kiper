@@ -147,6 +147,10 @@ func (k *Kiper) parseFlags(config interface{}, kcName string) (map[string]interf
 			res[tags["name"]] = kflag.String()
 		case reflect.Int:
 			res[tags["name"]] = kflag.Int()
+		case reflect.Int32:
+			res[tags["name"]] = kflag.Int32()
+		case reflect.Int64:
+			res[tags["name"]] = kflag.Int64()
 		case reflect.Bool:
 			res[tags["name"]] = kflag.Bool()
 		case reflect.Struct:
@@ -228,6 +232,10 @@ func (k *Kiper) merge(config interface{}, kpMap map[string]interface{}, vpMap ma
 				k.setStringValue(value, kpMap[name], vpMap[name])
 			case reflect.Int:
 				k.setIntValue(value, kpMap[name], vpMap[name])
+			case reflect.Int32:
+				k.setInt32Value(value, kpMap[name], vpMap[name])
+			case reflect.Int64:
+				k.setInt64Value(value, kpMap[name], vpMap[name])
 			case reflect.Bool:
 				k.setBoolValue(value, kpMap[name], vpMap[name])
 			case reflect.Struct:
@@ -264,6 +272,38 @@ func (k *Kiper) setIntValue(value reflect.Value, flag interface{}, cfg interface
 		return
 	}
 	fv, ok1 := flag.(*int)
+	cv, ok2 := cfg.(float64)
+	if ok2 {
+		value.SetInt(int64(cv))
+		return
+	}
+	if ok1 {
+		value.SetInt(int64(*fv))
+		return
+	}
+}
+
+func (k *Kiper) setInt32Value(value reflect.Value, flag interface{}, cfg interface{}) {
+	if flag == nil && cfg == nil {
+		return
+	}
+	fv, ok1 := flag.(*int32)
+	cv, ok2 := cfg.(float64)
+	if ok2 {
+		value.SetInt(int64(cv))
+		return
+	}
+	if ok1 {
+		value.SetInt(int64(*fv))
+		return
+	}
+}
+
+func (k *Kiper) setInt64Value(value reflect.Value, flag interface{}, cfg interface{}) {
+	if flag == nil && cfg == nil {
+		return
+	}
+	fv, ok1 := flag.(*int64)
 	cv, ok2 := cfg.(float64)
 	if ok2 {
 		value.SetInt(int64(cv))
