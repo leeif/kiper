@@ -271,13 +271,23 @@ func (k *Kiper) setIntValue(value reflect.Value, flag interface{}, cfg interface
 	if flag == nil && cfg == nil {
 		return
 	}
-	fv, ok1 := flag.(*int)
-	cv, ok2 := cfg.(float64)
+	fv, ok := flag.(*int)
+	cv1, ok1 := cfg.(float64)
+	cv2, ok2 := cfg.(int64)
+	cv3, ok3 := cfg.(int)
+	if ok3 {
+		value.SetInt(int64(cv3))
+		return
+	}
 	if ok2 {
-		value.SetInt(int64(cv))
+		value.SetInt(int64(cv2))
 		return
 	}
 	if ok1 {
+		value.SetInt(int64(cv1))
+		return
+	}
+	if ok {
 		value.SetInt(int64(*fv))
 		return
 	}
@@ -287,13 +297,23 @@ func (k *Kiper) setInt32Value(value reflect.Value, flag interface{}, cfg interfa
 	if flag == nil && cfg == nil {
 		return
 	}
-	fv, ok1 := flag.(*int32)
-	cv, ok2 := cfg.(float64)
+	fv, ok := flag.(*int32)
+	cv1, ok1 := cfg.(float64)
+	cv2, ok2 := cfg.(int64)
+	cv3, ok3 := cfg.(int)
+	if ok3 {
+		value.SetInt(int64(cv3))
+		return
+	}
 	if ok2 {
-		value.SetInt(int64(cv))
+		value.SetInt(int64(cv2))
 		return
 	}
 	if ok1 {
+		value.SetInt(int64(cv1))
+		return
+	}
+	if ok {
 		value.SetInt(int64(*fv))
 		return
 	}
@@ -303,13 +323,23 @@ func (k *Kiper) setInt64Value(value reflect.Value, flag interface{}, cfg interfa
 	if flag == nil && cfg == nil {
 		return
 	}
-	fv, ok1 := flag.(*int64)
-	cv, ok2 := cfg.(float64)
+	fv, ok := flag.(*int64)
+	cv1, ok1 := cfg.(float64)
+	cv2, ok2 := cfg.(int64)
+	cv3, ok3 := cfg.(int)
+	if ok3 {
+		value.SetInt(int64(cv3))
+		return
+	}
 	if ok2 {
-		value.SetInt(int64(cv))
+		value.SetInt(int64(cv2))
 		return
 	}
 	if ok1 {
+		value.SetInt(int64(cv1))
+		return
+	}
+	if ok {
 		value.SetInt(int64(*fv))
 		return
 	}
@@ -398,14 +428,26 @@ func (k *Kiper) setPointerInt(value reflect.Value, flag interface{}, cfg interfa
 	if flag == nil && cfg == nil {
 		return
 	}
-	fv, ok1 := flag.(*int)
-	cv, ok2 := cfg.(float64)
+	fv, ok := flag.(*int)
+	cv1, ok1 := cfg.(float64)
+	cv2, ok2 := cfg.(int64)
+	cv3, ok3 := cfg.(int)
+	if ok3 {
+		tmp := int(cv3)
+		value.Set(reflect.ValueOf(&tmp))
+		return
+	}
 	if ok2 {
-		tmp := int(cv)
+		tmp := int(cv2)
 		value.Set(reflect.ValueOf(&tmp))
 		return
 	}
 	if ok1 {
+		tmp := int(cv1)
+		value.Set(reflect.ValueOf(&tmp))
+		return
+	}
+	if ok {
 		value.Set(reflect.ValueOf(fv))
 		return
 	}
