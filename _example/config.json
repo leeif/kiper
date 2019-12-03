@@ -1,7 +1,7 @@
 {
-    "server": {
-        "address": "192.0.0.1",
-        "port": "8080"
-    },
-    "id": 2
+    "string_var": "string from file",
+    "int_var": 20,
+    "bool_var": false,
+    "struct_var": "I am a sturct from file",
+    "array_var": ["test1_from_file", "test2_from_file"]
 }

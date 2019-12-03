@@ -4,6 +4,8 @@ import (
 	"errors"
 	"os"
 	"reflect"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -12,7 +14,8 @@ import (
 
 // DefaultConfigFile is default config file path
 const (
-	DefaultConfigFile = ".kiper"
+	DefaultConfigFile     = ".kiper"
+	DefaultArrayDelimiter = `\s*,\s*`
 )
 
 type KiperValue interface {
@@ -34,14 +37,19 @@ func (kv *kiperValue) String() string {
 }
 
 type Kiper struct {
-	Viper      *viper.Viper
-	Kingpin    *kingpin.Application
-	configFile *string
+	Viper          *viper.Viper
+	Kingpin        *kingpin.Application
+	arrayDelimiter string
+	configFile     *string
 	// kiper config map map struct
 	kpMap map[string]interface{}
 
 	// viper config map
 	vpMap map[string]interface{}
+}
+
+func (k *Kiper) SetArrayDelimiter(delimiter string) {
+	k.arrayDelimiter = delimiter
 }
 
 func (k *Kiper) Parse(config interface{}, args []string) error {
@@ -143,6 +151,9 @@ func (k *Kiper) parseFlags(config interface{}, kcName string) (map[string]interf
 			kflag = kflag.Default(deflt)
 		}
 		switch field.Type.Kind() {
+		case reflect.Array:
+		case reflect.Slice:
+			res[tags["name"]] = kflag.String()
 		case reflect.String:
 			res[tags["name"]] = kflag.String()
 		case reflect.Int:
@@ -228,6 +239,9 @@ func (k *Kiper) merge(config interface{}, kpMap map[string]interface{}, vpMap ma
 		tags = k.parseTag(field.Tag.Get("kiper_value"))
 		if name, ok := tags["name"]; ok && name != "" {
 			switch field.Type.Kind() {
+			case reflect.Array:
+			case reflect.Slice:
+				k.setArrayValue(value, kpMap[name], vpMap[name])
 			case reflect.String:
 				k.setStringValue(value, kpMap[name], vpMap[name])
 			case reflect.Int:
@@ -469,10 +483,80 @@ func (k *Kiper) setPointerBool(value reflect.Value, flag interface{}, cfg interf
 	}
 }
 
+func (k *Kiper) setArrayValue(value reflect.Value, flag interface{}, cfg interface{}) {
+	typ := reflect.TypeOf(value.Interface()).Elem()
+	switch typ.Kind() {
+	case reflect.String:
+		k.stringArray(value, typ, flag, cfg)
+	case reflect.Int:
+		k.intArray(value, typ, flag, cfg)
+	}
+}
+
+func (k *Kiper) stringArray(value reflect.Value, typ reflect.Type, flag interface{}, cfg interface{}) {
+	fv, ok1 := flag.(*string)
+	cv, ok2 := cfg.([]interface{})
+	if ok2 {
+		slice := reflect.MakeSlice(reflect.SliceOf(typ), 0, len(cv))
+		for _, s := range cv {
+			str, ok := s.(string)
+			if !ok {
+				continue
+			}
+			slice = reflect.Append(slice, reflect.ValueOf(str))
+		}
+		value.Set(slice)
+		return
+	}
+	if ok1 {
+		if k.arrayDelimiter == "" {
+			k.arrayDelimiter = DefaultArrayDelimiter
+		}
+		reg := regexp.MustCompile(k.arrayDelimiter)
+		value.Set(reflect.ValueOf(reg.Split(*fv, -1)))
+		return
+	}
+}
+
+func (k *Kiper) intArray(value reflect.Value, typ reflect.Type, flag interface{}, cfg interface{}) {
+	fv, ok1 := flag.(*string)
+	cv, ok2 := cfg.([]interface{})
+	if ok2 {
+		slice := reflect.MakeSlice(reflect.SliceOf(typ), 0, len(cv))
+		for _, s := range cv {
+			f, ok := s.(float64)
+			if !ok {
+				continue
+			}
+			slice = reflect.Append(slice, reflect.ValueOf(int(f)))
+		}
+		value.Set(slice)
+		return
+	}
+	if ok1 {
+		if k.arrayDelimiter == "" {
+			k.arrayDelimiter = DefaultArrayDelimiter
+		}
+		reg := regexp.MustCompile(k.arrayDelimiter)
+		a := make([]int, 0)
+		for _, i := range reg.Split(*fv, -1) {
+			num, err := strconv.Atoi(i)
+			if err != nil {
+				continue
+			}
+			a = append(a, num)
+		}
+		value.Set(reflect.ValueOf(a))
+		return
+	}
+}
+
 func NewKiper(name, help string) *Kiper {
 	kiper := &Kiper{}
 	kiper.Viper = viper.New()
 	kiper.Kingpin = kingpin.New(name, help)
+
+	kiper.arrayDelimiter = DefaultArrayDelimiter
 
 	return kiper
 }
