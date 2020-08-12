@@ -110,6 +110,6 @@ func TestKiperConfig(t *testing.T) {
 	assert.Equal(t, tc.TestInt64, int64(80), "test should be 80")
 
 	assert.Equal(t, tc.Address.String(), "test1", "address should be test1 after merge")
-	assert.Equal(t, tc.TestString, "test2", "test should be test2 after merge")
+	assert.Equal(t, "test2", tc.TestString, "test should be test2 after merge")
 	assert.Equal(t, tc.Another.Address.String(), "test3", "another.address should be test3 after merge")
 }

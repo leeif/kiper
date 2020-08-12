@@ -238,12 +238,15 @@ func (k *Kiper) merge(config interface{}, kpMap map[string]interface{}, vpMap ma
 		}
 		tags = k.parseTag(field.Tag.Get("kiper_value"))
 		if name, ok := tags["name"]; ok && name != "" {
+
+			envValue := os.Getenv(name)
+
 			switch field.Type.Kind() {
 			case reflect.Array:
 			case reflect.Slice:
 				k.setArrayValue(value, kpMap[name], vpMap[name])
 			case reflect.String:
-				k.setStringValue(value, kpMap[name], vpMap[name])
+				k.setStringValue(value, kpMap[name], vpMap[name], envValue)
 			case reflect.Int:
 				k.setIntValue(value, kpMap[name], vpMap[name])
 			case reflect.Int32:
@@ -265,12 +268,18 @@ func (k *Kiper) merge(config interface{}, kpMap map[string]interface{}, vpMap ma
 	return nil
 }
 
-func (k *Kiper) setStringValue(value reflect.Value, flag interface{}, cfg interface{}) {
-	if flag == nil && cfg == nil {
+func (k *Kiper) setStringValue(value reflect.Value, flag interface{}, cfg interface{}, env string) {
+	if flag == nil && cfg == nil && env == "" {
 		return
 	}
 	fv, ok1 := flag.(*string)
 	cv, ok2 := cfg.(string)
+
+	if env != "" {
+		value.SetString(env)
+		return
+	}
+
 	if ok2 {
 		value.SetString(cv)
 		return
