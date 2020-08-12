@@ -2,6 +2,7 @@ package kiper_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 
@@ -15,11 +16,12 @@ type TestConfig struct {
 	TestInt    int      `kiper_value:"name:test_int;required"`
 	TestInt64  int64    `kiper_value:"name:test_int64;default:64"`
 	TestBool   bool     `kiper_value:"name:test_bool;default:false"`
-	Another    Another  `kiper_config:"name:another"`
+	Another    *Another `kiper_config:"name:another"`
 }
 
 type Another struct {
-	Address *Address `kiper_value:"name:address;help:address of server;default:127.0.0.1"`
+	TestString string   `kiper_value:"name:test_string"`
+	Address    *Address `kiper_value:"name:address;help:address of server;default:127.0.0.1"`
 }
 
 type Address struct {
@@ -64,7 +66,7 @@ func deleteConfigFile(path string) error {
 func TestKiperConfig(t *testing.T) {
 	tc := &TestConfig{
 		Address: &Address{},
-		Another: Another{
+		Another: &Another{
 			Address: &Address{},
 		},
 	}
@@ -103,6 +105,8 @@ func TestKiperConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
+
+	fmt.Println(tc.Another.TestString)
 
 	assert.Equal(t, tc.TestInt, 2, "test should be test2")
 	assert.Equal(t, tc.TestBool, false, "test should be test2")

@@ -74,7 +74,7 @@ func (k *Kiper) Parse(config interface{}, args []string) error {
 		return err
 	}
 
-	err = k.merge(config, k.kpMap, k.vpMap)
+	err = k.merge(config, startKiperConfig, k.kpMap, k.vpMap)
 	if err != nil {
 		return err
 	}
@@ -200,7 +200,7 @@ func (k *Kiper) parseTag(tag string) map[string]string {
 	return m
 }
 
-func (k *Kiper) merge(config interface{}, kpMap map[string]interface{}, vpMap map[string]interface{}) error {
+func (k *Kiper) merge(config interface{}, kcName string, kpMap map[string]interface{}, vpMap map[string]interface{}) error {
 	t := reflect.TypeOf(config)
 	v := reflect.ValueOf(config)
 	if t.Kind() == reflect.Ptr {
@@ -231,15 +231,21 @@ func (k *Kiper) merge(config interface{}, kpMap map[string]interface{}, vpMap ma
 			if !ok {
 				km = nil
 			}
-			if err := k.merge(value.Interface(), km, vm); err != nil {
+			if err := k.merge(value.Interface(), name, km, vm); err != nil {
 				return err
 			}
 			continue
 		}
 		tags = k.parseTag(field.Tag.Get("kiper_value"))
 		if name, ok := tags["name"]; ok && name != "" {
+			envKey := ""
+			if kcName == "" {
+				envKey = name
+			} else {
+				envKey = kcName + "_" + name
+			}
 
-			envValue := os.Getenv(name)
+			envValue := os.Getenv(envKey)
 
 			switch field.Type.Kind() {
 			case reflect.Array:
