@@ -82,6 +82,10 @@ func (k *Kiper) Parse(config interface{}, args []string) error {
 	return nil
 }
 
+func (k *Kiper) SetConfigFilePath(path string) {
+	k.configFile = &path
+}
+
 func (k *Kiper) SetConfigFileFlag(flag string, description string, value string) {
 	if value != "" {
 		k.configFile = k.Kingpin.Flag(flag, description).Default(value).String()
