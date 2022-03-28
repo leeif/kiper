@@ -46,6 +46,12 @@ type Kiper struct {
 
 	// viper config map
 	vpMap map[string]interface{}
+
+	skipFlag bool
+}
+
+func (k *Kiper) SetSkipFlag(skip bool) {
+	k.skipFlag = skip
 }
 
 func (k *Kiper) SetArrayDelimiter(delimiter string) {
@@ -55,14 +61,16 @@ func (k *Kiper) SetArrayDelimiter(delimiter string) {
 func (k *Kiper) Parse(config interface{}, args []string) error {
 	var err error
 	startKiperConfig := ""
-	k.kpMap, err = k.parseFlags(config, startKiperConfig)
-	if err != nil {
-		return err
-	}
+	if !k.skipFlag {
+		k.kpMap, err = k.parseFlags(config, startKiperConfig)
+		if err != nil {
+			return err
+		}
 
-	// parse command line flags
-	if _, err := k.Kingpin.Parse(args); err != nil {
-		return err
+		// parse command line flags
+		if _, err := k.Kingpin.Parse(args); err != nil {
+			return err
+		}
 	}
 
 	if k.configFile != nil && *k.configFile != "" {
